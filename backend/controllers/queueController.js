@@ -1,6 +1,5 @@
 const db = require('../config/db');
 
-// 1. Fungsi Ambil Antrian (POST)
 const ambilAntrian = (req, res) => {
     const { nama_pasien, no_hp, poli_tujuan } = req.body;
     let prefix = 'U';
@@ -23,6 +22,9 @@ const ambilAntrian = (req, res) => {
         
         db.query(querySimpan, [nama_pasien, no_hp, poli_tujuan, kodeAntrianBaru], (err2, hasil) => {
             if (err2) return res.status(500).json({ error: err2.message });
+            
+            req.io.emit('queueUpdated', { pesan: 'Ada antrian baru masuk!' });
+
             res.json({
                 pesan: "Antrian berhasil diambil!",
                 kode_antrian: kodeAntrianBaru
@@ -31,7 +33,6 @@ const ambilAntrian = (req, res) => {
     });
 };
 
-// 2. Fungsi Ambil Semua Antrian (GET)
 const getSemuaAntrian = (req, res) => {
     const query = "SELECT * FROM antrian_pasien ORDER BY id ASC";
     db.query(query, (err, results) => {
@@ -40,22 +41,26 @@ const getSemuaAntrian = (req, res) => {
     });
 };
 
-// 3. Fungsi Panggil Pasien (PUT)
 const panggilPasien = (req, res) => {
     const idPasien = req.params.id; 
     const query = "UPDATE antrian_pasien SET status = 'dipanggil' WHERE id = ?";
     db.query(query, [idPasien], (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
+        
+        req.io.emit('queueUpdated', { pesan: `Pasien dipanggil!` });
+
         res.json({ pesan: `Pasien dengan ID ${idPasien} sedang dipanggil!` });
     });
 };
 
-// 4. Fungsi Selesaikan Antrian (PUT)
 const selesaikanAntrian = (req, res) => {
     const idPasien = req.params.id;
     const query = "UPDATE antrian_pasien SET status = 'selesai' WHERE id = ?";
     db.query(query, [idPasien], (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
+        
+        req.io.emit('queueUpdated', { pesan: `Antrian selesai!` });
+
         res.json({ pesan: `Antrian ID ${idPasien} telah selesai!` });
     });
 };
